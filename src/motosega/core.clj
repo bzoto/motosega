@@ -4,10 +4,15 @@
 
 (ns motosega.core
   (:gen-class))
-
+(use 'clojure.java.io)
 
 (defn -main
   [& args]
-  (println "Chainsaw 0.1")
-  (load-file (first args)))
+  (println "Motosega 0.1")
+  (if (and (not (empty? args))
+           (.exists (as-file (first args))))
+    (load-file (first args))
+    (do
+      (print "Error: I need a file to work, not ")
+      (println args))))
 

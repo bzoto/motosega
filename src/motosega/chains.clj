@@ -76,8 +76,7 @@
          right sf]
     (if (empty? right)
       out
-      (let [x   (first right)
-            xs  (rest right)]
+      (let [[x & xs]  right]
         (recur (if (instance? Nonterm x)
                 (concat (map #(concat left % xs)
                              (G x))
