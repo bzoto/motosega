@@ -1,16 +1,16 @@
 # motosega
 
-FIXME: description
+A bunch of utilities for generalized input driven languages.
 
 ## Installation
 
-Download from http://example.com/FIXME.
+Download from here.
 
 ## Usage
 
 FIXME: explanation
 
-    $ java -jar motosega-0.1.0-standalone.jar [args]
+    $ java -jar motosega-0.1.0-standalone.jar filename
 
 ## Options
 
@@ -30,7 +30,7 @@ FIXME: listing of options this app accepts.
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 Matteo Pradella
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
