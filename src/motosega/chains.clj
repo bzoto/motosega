@@ -7,6 +7,8 @@
 (ns motosega.chains)
 (require 'clojure.set)
 
+
+
 (defrecord Nonterm [symb])
 
 (defn nonterm [s] (Nonterm. s))
@@ -19,7 +21,7 @@
       G
       (let [rule (first r)]
         (recur
-          (next r)
+          (rest r)
           (assoc G
                  (Nonterm. (first rule))
                  (map (fn [t]
@@ -92,7 +94,7 @@
       (persistent! out)
       (let [nt (first nts)]
         (recur
-          (next nts)
+          (rest nts)
           (assoc! out nt (clojure.set/union (out nt)(h2 nt))))))))
 
 
@@ -125,7 +127,7 @@
 
 (defn- show-alternatives [lst-of-lst]
   (when-not (empty? lst-of-lst)
-    (doseq [l (next lst-of-lst)]
+    (doseq [l (rest lst-of-lst)]
       (show-list-as-string l)
       (print " | "))
     (show-list-as-string (first lst-of-lst))))
