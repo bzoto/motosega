@@ -14,7 +14,9 @@
 (defn nonterm [s] (Nonterm. s)) ; ci dovrebbe essere ->Nonterm
 
 
-(defn build-grammar [gr nt]
+(defn build-grammar 
+  "takes a grammar as a list of lists (e.g. ((A -> ((a A) (a))) ...) and returns a hash table of the rules"
+  [gr nt]
   (loop [r gr
          G {}]
     (if (empty? r)
@@ -32,7 +34,9 @@
                              t))
                       (nth rule 2))))))))
 
-(defn terminal-sf? [sf]
+(defn terminal-sf? 
+  "is it a terminal sentential form?"
+  [sf]
   (every? #(not (instance? Nonterm %)) sf))
 
 
@@ -46,7 +50,7 @@
     (nth lst x)))
 
 (defn sf-contexts
-  "returns nonterminal + context, if all terminal"
+  "returns the nonterminals and their k contexts, if all terminal, in a hash table"
   [sf k]
   (loop [x (first sf)
          L (rest sf)
@@ -72,7 +76,9 @@
                    res))
                res)))))
 
-(defn apply-rules [sf G]
+(defn apply-rules 
+  "applies all the possible rules in G to the sentential form sf"
+  [sf G]
   (loop [out  '()
          left '()
          right sf]
@@ -99,7 +105,9 @@
 
 
 
-(defn get-contexts [G axiom k steps]
+(defn get-contexts 
+  "computes all the k-contexts it can find in 'steps' derivations"
+  [G axiom k steps]
   (let [bord (for [x (range k)] '$)]
     (loop [sfs  (list (concat bord (list (nonterm axiom)) bord))
            ctxs { (nonterm axiom) #{(list bord bord)}}
@@ -132,7 +140,9 @@
       (print " | "))
     (show-list-as-string (first lst-of-lst))))
 
-(defn chains [G axiom k steps]
+(defn chains 
+  "computes all the simple chains it can find with 'steps' derivation depth"
+  [G axiom k steps]
   (let [contexts   (get-contexts G axiom k steps)
         nts        (keys contexts)
         bodys      (atom {})
@@ -145,8 +155,7 @@
 
     (doseq [n nts]
       (doseq [c (contexts n)]
-        (let [old (@the-chains c)
-              old (or old #{})]
+        (let [old (@the-chains c #{})]
           (swap! the-chains
                  #(assoc % c (clojure.set/union old (@bodys n)))))))
 
