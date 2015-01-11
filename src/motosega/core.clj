@@ -6,6 +6,7 @@
   (:gen-class))
 (use 'clojure.java.io)
 
+
 (defn -main
   [& args]
   (println "Motosega 0.1")

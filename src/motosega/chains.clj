@@ -11,7 +11,7 @@
 
 (defrecord Nonterm [symb])
 
-(defn nonterm [s] (Nonterm. s))
+(defn nonterm [s] (Nonterm. s)) ; ci dovrebbe essere ->Nonterm
 
 
 (defn build-grammar [gr nt]
@@ -23,16 +23,16 @@
         (recur
           (rest r)
           (assoc G
-                 (Nonterm. (first rule))
+                 (->Nonterm (first rule))
                  (map (fn [t]
                         (map (fn [u]
                                (if (some #{u} nt)
-                                 (Nonterm. u)
+                                 (->Nonterm u)
                                  u))
                              t))
                       (nth rule 2))))))))
 
-(defn- terminal-sf? [sf]
+(defn terminal-sf? [sf]
   (every? #(not (instance? Nonterm %)) sf))
 
 
@@ -45,7 +45,7 @@
   (for [x (range (+ i 1) (+ i k 1))]
     (nth lst x)))
 
-(defn- sf-contexts
+(defn sf-contexts
   "returns nonterminal + context, if all terminal"
   [sf k]
   (loop [x (first sf)
@@ -72,7 +72,7 @@
                    res))
                res)))))
 
-(defn- apply-rules [sf G]
+(defn apply-rules [sf G]
   (loop [out  '()
          left '()
          right sf]
@@ -99,7 +99,7 @@
 
 
 
-(defn- get-contexts [G axiom k steps]
+(defn get-contexts [G axiom k steps]
   (let [bord (for [x (range k)] '$)]
     (loop [sfs  (list (concat bord (list (nonterm axiom)) bord))
            ctxs { (nonterm axiom) #{(list bord bord)}}
