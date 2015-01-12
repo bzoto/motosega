@@ -11,8 +11,6 @@
 
 (defrecord Nonterm [symb])
 
-(defn nonterm [s] (Nonterm. s)) ; ci dovrebbe essere ->Nonterm
-
 
 (defn build-grammar 
   "takes a grammar as a list of lists (e.g. ((A -> ((a A) (a))) ...) and returns a hash table of the rules"
@@ -109,8 +107,8 @@
   "computes all the k-contexts it can find in 'steps' derivations"
   [G axiom k steps]
   (let [bord (for [x (range k)] '$)]
-    (loop [sfs  (list (concat bord (list (nonterm axiom)) bord))
-           ctxs { (nonterm axiom) #{(list bord bord)}}
+    (loop [sfs  (list (concat bord (list (->Nonterm axiom)) bord))
+           ctxs { (->Nonterm axiom) #{(list bord bord)}}
            cnt  0]
       (if (or (empty? sfs)(== steps cnt))
         ctxs
