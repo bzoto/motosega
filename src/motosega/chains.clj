@@ -6,10 +6,16 @@
 
 (ns motosega.chains)
 (require 'clojure.set)
+(require 'clojure.string)
 
 
 
-(defrecord Nonterm [symb])
+
+(defn Nonterm? [x] (and (vector? x) (= (first x) :nonterm)))
+(defn ->Nonterm [x] [:nonterm x])
+
+(defn- drop-nt [lst]
+  (filter #(not (Nonterm? %)) lst))
 
 
 (defn build-grammar 
@@ -35,7 +41,7 @@
 (defn terminal-sf? 
   "is it a terminal sentential form?"
   [sf]
-  (every? #(not (instance? Nonterm %)) sf))
+  (every? #(not (Nonterm? %)) sf))
 
 
 (defn- before-k [lst i k]
@@ -61,7 +67,7 @@
              (rest  L)
              (inc i)
 
-             (if (instance? Nonterm x)
+             (if (Nonterm? x)
                (let [left  (before-k sf i k)
                      right (after-k sf i k)]
                  (if (and
@@ -83,13 +89,54 @@
     (if (empty? right)
       out
       (let [[x & xs]  right]
-        (recur (if (instance? Nonterm x)
+        (recur (if (Nonterm? x)
                 (concat (map #(concat left % xs)
                              (G x))
                         out)
                 out)
               (concat left (list x))
               xs)))))
+
+(defn grammatical-chains 
+  [sf G maxlength]
+  (loop [sfs  '()
+         left '()
+         right sf
+         out   #{}
+         ]
+
+    (if (and (empty? sfs)
+             (empty? right))
+      (set (map
+            #(clojure.string/replace % ":" "")
+            (map
+             clojure.string/join
+             out)))
+      (if (empty? right)
+        (recur (rest sfs)
+               '()
+               (first sfs)
+               out)
+        (let [[x & xs]  right
+              newstuff (if (Nonterm? x)
+                         (map #(concat left
+                                       (list \[)
+                                       %
+                                       (list \])
+                                       xs)
+                              (G x))
+                         nil)
+              newchains (set (map drop-nt newstuff))]
+          (recur
+           (concat sfs (filter #(<= (count %) maxlength)
+                               newstuff)
+                   )
+           
+           (concat left (list x))
+           xs
+           (clojure.set/union out newchains)
+           ))))))
+
 
 (defn- union-of-context-hashes [h1 h2]
   (loop [nts (keys h2)
@@ -124,8 +171,6 @@
             (inc cnt)))))))
 
 
-(defn- drop-nt [lst]
-  (filter #(not (instance? Nonterm %)) lst))
 
 (defn- show-list-as-string [lst]
   (doseq [t lst]
