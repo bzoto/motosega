@@ -90,52 +90,14 @@
       out
       (let [[x & xs]  right]
         (recur (if (Nonterm? x)
-                (concat (map #(concat left % xs)
-                             (G x))
-                        out)
+                 (concat (map #(concat left % xs)
+                              (G x))
+                         out)
                 out)
               (concat left (list x))
               xs)))))
 
-(defn grammatical-chains 
-  [sf G maxlength]
-  (loop [sfs  '()
-         left '()
-         right sf
-         out   #{}
-         ]
 
-    (if (and (empty? sfs)
-             (empty? right))
-      (set (map
-            #(clojure.string/replace % ":" "")
-            (map
-             clojure.string/join
-             out)))
-      (if (empty? right)
-        (recur (rest sfs)
-               '()
-               (first sfs)
-               out)
-        (let [[x & xs]  right
-              newstuff (if (Nonterm? x)
-                         (map #(concat left
-                                       (list \[)
-                                       %
-                                       (list \])
-                                       xs)
-                              (G x))
-                         nil)
-              newchains (set (map drop-nt newstuff))]
-          (recur
-           (concat sfs (filter #(<= (count %) maxlength)
-                               newstuff)
-                   )
-           
-           (concat left (list x))
-           xs
-           (clojure.set/union out newchains)
-           ))))))
 
 
 (defn- union-of-context-hashes [h1 h2]
@@ -149,13 +111,16 @@
           (assoc! out nt (clojure.set/union (out nt)(h2 nt))))))))
 
 
+(defn border [k]
+  (for [x (range k)] :#))
+
 
 (defn get-contexts 
   "computes all the k-contexts it can find in 'steps' derivations"
   [G axiom k steps]
-  (let [bord (for [x (range k)] '$)]
+  (let [bord (border k)]
     (loop [sfs  (list (concat bord (list (->Nonterm axiom)) bord))
-           ctxs { (->Nonterm axiom) #{(list bord bord)}}
+           ctxs { (->Nonterm axiom) #{(list bord bord)} }
            cnt  0]
       (if (or (empty? sfs)(== steps cnt))
         ctxs
@@ -174,7 +139,7 @@
 
 (defn- show-list-as-string [lst]
   (doseq [t lst]
-    (print t)))
+    (print (name t))))
 
 (defn- show-alternatives [lst-of-lst]
   (when-not (empty? lst-of-lst)
@@ -202,6 +167,7 @@
           (swap! the-chains
                  #(assoc % c (clojure.set/union old (@bodys n)))))))
 
+    (println "Simple chains:")
     (doseq [k @the-chains]
       (show-list-as-string (first (first k)))
       (print "[")
@@ -213,4 +179,166 @@
     @the-chains
     ))
 
+(defn chains-as-set [chains-hash]
+  (let [out (atom #{})]
+    (doseq [[k v] chains-hash]
+      (doseq  [body v]
+        (swap! out 
+               #(conj %
+                      (concat 
+                       (list (first k))
+                       (list body)
+                       (list (second k)))))))
+    @out))
+
+(defn grammatical-chains 
+  [G axiom k maxlength]
+  (let [bord (border k)]
+    (loop [sfs  '()
+           left '()
+           right (concat bord (list (->Nonterm axiom)) bord)
+           out   #{}
+           ]
+
+      (if (and (empty? sfs)
+               (empty? right))
+        out
+        (if (empty? right)
+          (recur (rest sfs)
+                 '()
+                 (first sfs)
+                 out)
+          (let [[x & xs]  right
+                newstuff (if (Nonterm? x)
+                           (doall (map #(concat left
+                                                (list :<)
+                                                %
+                                                (list :>)
+                                                xs)
+                                       (G x)))
+                           nil)
+                newchains (set (doall
+                                (map drop-nt newstuff)))]
+            (recur
+             (doall (concat sfs (filter #(<= (count %) maxlength)
+                                 newstuff)
+                     ))
+             
+             (doall (concat left (list x)))
+             xs
+             (clojure.set/union out newchains)
+             )))))))
+
+(defn set-of-sfs->list-of-strings [the-set]
+  (map 
+   (fn [s]
+     (apply concat
+            (map name s)))
+   the-set))
+
+
+(defn display-list-of-strings [L]
+  (loop [x L
+         c 1]
+    (when x
+      (print c) 
+      (print ") ")
+      (println (first x))
+      (recur (next x)(inc c)))))
+
+(defn three-factors [lst]
+  (let [out (atom '())
+        n   (dec (count lst))]
+    (loop [i 1]
+      (when (< i n)
+        (loop [j (inc i)]
+          (when (<= j n)
+            (let [[a b] (split-at i lst)
+                  [c d] (split-at (- j i) b)]
+                (swap! out #(cons (list a c d) %))
+                (recur (+ j 1)))))
+        (recur (+ i 1))))
+    @out))
+
+(defn drop-brackets [lst]
+  (filter #(not (some #{%} '(:< :>))) lst))
+
+
+(defn h+ [lst k]
+  (let [l1 (drop-brackets lst)]
+    (if (< (count l1) k)
+      '()
+      (take-last k l1))))
+
+(defn h- [lst k]
+  (let [l1 (drop-brackets lst)]
+    (if (< (count l1) k)
+      '()
+      (take k l1))))
+
+(defn is-bracketed? [lst y]
+  (loop [cur lst
+         the-y y
+         state 0]
+    (cond
+      (empty? cur)  (= state 2)
+      (and (= :< (first cur))
+           (== 0 state))
+      (recur (rest cur) the-y 0)
+      (and (empty? the-y) 
+           (= :> (first cur))
+           (or (== 1 state)(== 2 state)))
+      (recur (rest cur) the-y 2)
+      (empty? the-y) false
+      (and (= (first the-y)(first cur))
+           (or (== 0 state)(== 1 state)))
+      (recur (rest cur) (rest the-y) 1)
+      :else false)))
+
+
+(defn conflictual 
+  "c is a chain, x[y]z is a simple chain"
+  [c x y z h]
+  (let [cc (three-factors c)]
+    (filter 
+     (fn [fac]
+       (let [[X Y Z] fac
+             r
+             (and
+              (= x (h+ X h))
+              (= z (h- Z h))
+              (= (drop-brackets Y) y)
+              (not (is-bracketed? Y y))
+              (not (some #{(last X)}   '(:< :>)))
+              (not (some #{(first Z)}  '(:< :>)))
+              )]
+         r))
+     cc)))
+
+
+
+(defn show-conflicts [cf]
+  (println "Conflicts:")
+  (doseq [c cf]
+       (let [[[l cc r] ch] 
+             c]
+         (show-list-as-string l)
+         (print "[")
+         (show-list-as-string cc)
+         (print "]")
+         (show-list-as-string r)
+         (print " VS ")
+         (println (clojure.string/join (map name ch)))
+         )))
+
+
+(defn find-conflicts [the-chains simple-chains h]
+    (for [c the-chains
+          s simple-chains
+          :when
+          (let [[x y z] s
+                confl (conflictual c x y z h)]
+            (not (empty? confl)))
+          ]
+      (list s c)))
 
