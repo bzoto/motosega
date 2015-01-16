@@ -328,7 +328,12 @@
          (print "]")
          (show-list-as-string r)
          (print " VS ")
-         (println (clojure.string/join (map name ch)))
+         (println (clojure.string/join
+                   (map #(cond
+                           (= % :<) \[
+                           (= % :>) \]
+                           :else (name %))
+                        ch)))
          )))
 
 
