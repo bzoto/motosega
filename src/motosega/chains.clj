@@ -1,6 +1,6 @@
 ;; ----------------------------
 ;; A dumb chain computer
-;; Clojure version
+;; -- Clojure version --
 ;; (c) by Matteo Pradella, MMXV
 ;; ----------------------------
 
@@ -10,8 +10,8 @@
 
 
 
-
-(defn Nonterm? [x] (and (vector? x) (= (first x) :nonterm)))
+(defn Nonterm? [x] (and (vector? x)
+                        (= (first x) :nonterm)))
 (defn ->Nonterm [x] [:nonterm x])
 
 (defn- drop-nt [lst]
@@ -27,16 +27,16 @@
       G
       (let [rule (first r)]
         (recur
-          (rest r)
-          (assoc G
-                 (->Nonterm (first rule))
-                 (map (fn [t]
-                        (map (fn [u]
-                               (if (some #{u} nt)
-                                 (->Nonterm u)
-                                 u))
-                             t))
-                      (nth rule 2))))))))
+         (rest r)
+         (assoc G
+                (->Nonterm (first rule))
+                (map (fn [t]
+                       (map (fn [u]
+                              (if (some #{u} nt)
+                                (->Nonterm u)
+                                u))
+                            t))
+                     (nth rule 2))))))))
 
 (defn terminal-sf? 
   "is it a terminal sentential form?"
@@ -71,10 +71,10 @@
                (let [left  (before-k sf i k)
                      right (after-k sf i k)]
                  (if (and
-                       (terminal-sf? left)
-                       (terminal-sf? right))
+                      (terminal-sf? left)
+                      (terminal-sf? right))
                    (assoc! res x
-                          (conj
+                           (conj
                             (res x)
                             (list left right)))
                    res))
@@ -93,9 +93,9 @@
                  (concat (map #(concat left % xs)
                               (G x))
                          out)
-                out)
-              (concat left (list x))
-              xs)))))
+                 out)
+               (concat left (list x))
+               xs)))))
 
 
 
@@ -107,8 +107,8 @@
       (persistent! out)
       (let [nt (first nts)]
         (recur
-          (rest nts)
-          (assoc! out nt (clojure.set/union (out nt)(h2 nt))))))))
+         (rest nts)
+         (assoc! out nt (clojure.set/union (out nt)(h2 nt))))))))
 
 
 (defn border [k]
@@ -128,12 +128,12 @@
                          (apply-rules (first sfs) G))
               xs (rest sfs)]
           (recur
-            (concat xs x)
-            (if (empty? x)
-              ctxs
-              (union-of-context-hashes ctxs
-                  (reduce union-of-context-hashes (map #(sf-contexts % k) x))))
-            (inc cnt)))))))
+           (concat xs x)
+           (if (empty? x)
+             ctxs
+             (union-of-context-hashes ctxs
+                                      (reduce union-of-context-hashes (map #(sf-contexts % k) x))))
+           (inc cnt)))))))
 
 
 
@@ -210,41 +210,26 @@
                  out)
           (let [[x & xs]  right
                 newstuff (if (Nonterm? x)
-                           (doall (map #(concat left
-                                                (list :<)
-                                                %
-                                                (list :>)
-                                                xs)
-                                       (G x)))
+                           (doall
+                            (map #(concat left
+                                          (list :<)
+                                          %
+                                          (list :>)
+                                          xs)
+                                 (G x)))
                            nil)
                 newchains (set (doall
                                 (map drop-nt newstuff)))]
             (recur
              (doall (concat sfs (filter #(<= (count %) maxlength)
-                                 newstuff)
-                     ))
+                                        newstuff)
+                            ))
              
              (doall (concat left (list x)))
              xs
              (clojure.set/union out newchains)
              )))))))
 
-(defn set-of-sfs->list-of-strings [the-set]
-  (map 
-   (fn [s]
-     (apply concat
-            (map name s)))
-   the-set))
-
-
-(defn display-list-of-strings [L]
-  (loop [x L
-         c 1]
-    (when x
-      (print c) 
-      (print ") ")
-      (println (first x))
-      (recur (next x)(inc c)))))
 
 (defn three-factors [lst]
   (let [out (atom '())
@@ -255,8 +240,8 @@
           (when (<= j n)
             (let [[a b] (split-at i lst)
                   [c d] (split-at (- j i) b)]
-                (swap! out #(cons (list a c d) %))
-                (recur (+ j 1)))))
+              (swap! out #(cons (list a c d) %))
+              (recur (+ j 1)))))
         (recur (+ i 1))))
     @out))
 
@@ -315,35 +300,41 @@
          r))
      cc)))
 
+(defn chain->string [ch]
+  (clojure.string/join
+   (map #(cond
+           (= % :<) \[
+           (= % :>) \]
+           :else (name %))
+        ch)))
+
+(defn show-chains [cs]
+  (doseq [c cs]
+    (println (chain->string c))))
 
 
 (defn show-conflicts [cf]
   (println "Conflicts:")
   (doseq [c cf]
-       (let [[[l cc r] ch] 
-             c]
-         (show-list-as-string l)
-         (print "[")
-         (show-list-as-string cc)
-         (print "]")
-         (show-list-as-string r)
-         (print " VS ")
-         (println (clojure.string/join
-                   (map #(cond
-                           (= % :<) \[
-                           (= % :>) \]
-                           :else (name %))
-                        ch)))
-         )))
+    (let [[[l cc r] ch] 
+          c]
+      (show-list-as-string l)
+      (print "[")
+      (show-list-as-string cc)
+      (print "]")
+      (show-list-as-string r)
+      (print " VS ")
+      (println (chain->string ch))
+      )))
 
 
 (defn find-conflicts [the-chains simple-chains h]
-    (for [c the-chains
-          s simple-chains
-          :when
-          (let [[x y z] s
-                confl (conflictual c x y z h)]
-            (not (empty? confl)))
-          ]
-      (list s c)))
+  (for [c the-chains
+        s simple-chains
+        :when
+        (let [[x y z] s
+              confl (conflictual c x y z h)]
+          (not (empty? confl)))
+        ]
+    (list s c)))
 

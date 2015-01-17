@@ -2,16 +2,16 @@
 
 (def G1
   (build-grammar 
-  '((E -> ((E - T) (T * F) (a) (- a)))
-    (T -> ((T * F) (a) (- a)))
-    (F -> ((a) (- a))))
-  '(E T F)))
+   '((E -> ((E - a * T)(E - - a * T)(E - a)(E - - a)(a * T)(- a * T)(a)(- a)))
+     (T -> ((a * T)(- a * T)(a)(- a))))
+  '(E T)))
 
 
 
-(def grammchains (grammatical-chains G1 'E 2 10))
+(def grammchains (grammatical-chains G1 'E 2 15))
 
 (show-chains grammchains)
+
 
 (show-conflicts
  (find-conflicts grammchains
