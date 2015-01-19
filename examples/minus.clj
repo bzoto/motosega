@@ -13,6 +13,7 @@
 
 (show-chains grammchains)
 
+
 (show-conflicts
  (find-conflicts grammchains
                  (chains-as-set (chains G1 'E 2 100))

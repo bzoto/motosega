@@ -191,6 +191,8 @@
                        (list (second k)))))))
     @out))
 
+(declare newstuff+newchains)
+
 (defn grammatical-chains 
   [G axiom k maxlength]
   (let [bord (border k)]
@@ -208,27 +210,41 @@
                  '()
                  (first sfs)
                  out)
-          (let [[x & xs]  right
-                newstuff (if (Nonterm? x)
-                           (doall
-                            (map #(concat left
-                                          (list :<)
-                                          %
-                                          (list :>)
-                                          xs)
-                                 (G x)))
-                           nil)
-                newchains (set (doall
-                                (map drop-nt newstuff)))]
-            (recur
-             (doall (concat sfs (filter #(<= (count %) maxlength)
-                                        newstuff)
-                            ))
-             
-             (doall (concat left (list x)))
-             xs
-             (clojure.set/union out newchains)
-             )))))))
+          (let [[x & xs]  right]
+                (if (Nonterm? x)
+                  (let [[newstuff newchains] (newstuff+newchains 
+                                              left (G x)
+                                              x xs maxlength)]
+                    (recur (doall (concat sfs newstuff))
+                           (doall (concat left (list x)))
+                           xs
+                           (clojure.set/union out newchains)))
+                  (recur sfs
+                         (doall (concat left (list x)))
+                         xs
+                         out))))))))
+
+
+(defn newstuff+newchains [left right-parts x xs maxlen]
+  (let  [newchains (transient #{})]
+    (loop [ns right-parts
+           newstuff '()]
+
+      (if (empty? ns)
+        [newstuff (persistent! newchains)]
+        (let [newchain  (concat left
+                                (list ':<)
+                                (first ns)
+                                (list ':>) xs)]
+
+          (conj! newchains (drop-nt newchain))
+          (recur (rest ns)
+                 (if (<= (count newchain)
+                         maxlen)
+                   (cons newchain newstuff)
+                   newstuff)
+                 ))))))
+
 
 
 (defn three-factors [lst]
@@ -310,7 +326,9 @@
 
 (defn show-chains [cs]
   (doseq [c cs]
-    (println (chain->string c))))
+    (println
+     (chain->string c))))
+
 
 
 (defn show-conflicts [cf]
@@ -337,4 +355,5 @@
           (not (empty? confl)))
         ]
     (list s c)))
+
 
