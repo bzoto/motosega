@@ -13,7 +13,7 @@
 
 (show-chains grammchains)
 
-(show-conflicts
- (find-conflicts grammchains
-                 (chains-as-set (chains G1 'E 3 100))
-                 3))
+(time 
+(show-conflicts (find-conflicts grammchains (chains-as-set (chains G1 'E 3 100)) 3))
+;;(parallel-find-conflicts grammchains (chains-as-set (chains G1 'E 3 100)) 3)
+)

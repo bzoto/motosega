@@ -9,7 +9,6 @@
 (require 'clojure.string)
 
 
-
 (defn Nonterm? [x] (and (vector? x)
                         (= (first x) :nonterm)))
 (defn ->Nonterm [x] [:nonterm x])
@@ -235,11 +234,15 @@
         (let [newchain  (concat left
                                 (list ':<)
                                 (first ns)
-                                (list ':>) xs)]
-
-          (conj! newchains (drop-nt newchain))
+                                (list ':>) xs)
+              nc (drop-nt newchain)
+              lnc (count nc)]
+          (when (<= (- maxlen 5)
+                    lnc
+                    maxlen)
+            (conj! newchains nc))
           (recur (rest ns)
-                 (if (<= (count newchain)
+                 (if (<= lnc
                          maxlen)
                    (cons newchain newstuff)
                    newstuff)
@@ -356,4 +359,40 @@
         ]
     (list s c)))
 
+(defn set-partition
+  "partitions a set in n subsets"
+  [the-set n]
+  (let [m (quot (count the-set) n)
+        v (transient (vec  (repeat n nil)))]
+    (loop [part 0
+           curr 0
+           s the-set]
+      (when s
+        (assoc! v part (conj (v part) (first s)))
+        (if (and
+             (>= (inc curr) m)
+             (< part (dec n)))
+          (recur (inc part) 0 (next s))
+          (recur part (inc curr) (next s)))))
+    (persistent! v)))
 
+(defn parallel-find-conflicts [the-chains simple-chains h]
+  (let [num-proc (.availableProcessors (Runtime/getRuntime))
+        schains (set-partition the-chains num-proc)
+        agts    (doall (map #(agent %) schains))]
+  
+  (doseq [a agts]
+    (send a #(find-conflicts % simple-chains h)))
+
+  (doseq [a agts]
+    (show-conflicts @a))))
+
+(defn parallel-find-conflicts-2 [the-chains simple-chains h]
+  (def pool (cp/threadpool 2))
+  (let [num-proc (.availableProcessors (Runtime/getRuntime))
+        schains (set-partition the-chains num-proc)
+        conf  (cp/upmap pool #(find-conflicts % simple-chains h) schains)]
+    (doseq [c conf]
+      (show-conflicts c))))
+
+    
