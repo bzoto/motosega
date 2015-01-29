@@ -9,11 +9,11 @@
    '(E T M F)))
 
 
-(def grammchains (grammatical-chains G1 'E 3 20))
+(def grammchains (grammatical-chains G1 'E 3 20 4))
 
 (show-chains grammchains)
 
 (time 
-(show-conflicts (find-conflicts grammchains (chains-as-set (chains G1 'E 3 100)) 3))
-;;(parallel-find-conflicts grammchains (chains-as-set (chains G1 'E 3 100)) 3)
+;;(show-conflicts (find-conflicts grammchains (chains-as-set (chains G1 'E 3 100)) 3))
+(parallel-find-conflicts-2 grammchains (chains-as-set (chains G1 'E 3 100)) 3)
 )

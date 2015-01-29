@@ -193,11 +193,12 @@
 (declare newstuff+newchains)
 
 (defn grammatical-chains 
-  [G axiom k maxlength]
+  [G axiom k maxlength & bound]
   (let [bord (border k)]
     (loop [sfs  '()
            left '()
-           right (concat bord (list (->Nonterm axiom)) bord)
+           right (doall
+                  (concat bord (list (->Nonterm axiom)) bord))
            out   #{}
            ]
 
@@ -213,7 +214,7 @@
                 (if (Nonterm? x)
                   (let [[newstuff newchains] (newstuff+newchains 
                                               left (G x)
-                                              x xs maxlength)]
+                                              x xs maxlength bound)]
                     (recur (doall (concat sfs newstuff))
                            (doall (concat left (list x)))
                            xs
@@ -224,22 +225,23 @@
                          out))))))))
 
 
-(defn newstuff+newchains [left right-parts x xs maxlen]
+(defn newstuff+newchains [left right-parts x xs maxlen bound]
   (let  [newchains (transient #{})]
     (loop [ns right-parts
            newstuff '()]
 
       (if (empty? ns)
         [newstuff (persistent! newchains)]
-        (let [newchain  (concat left
+        (let [newchain  (doall (concat left
                                 (list ':<)
                                 (first ns)
-                                (list ':>) xs)
+                                (list ':>) xs))
               nc (drop-nt newchain)
               lnc (count nc)]
-          (when (<= (- maxlen 5)
-                    lnc
-                    maxlen)
+          (when (or (empty? bound)
+                    (<= (- maxlen (first bound))
+                        lnc
+                        maxlen))
             (conj! newchains nc))
           (recur (rest ns)
                  (if (<= lnc
@@ -376,7 +378,7 @@
           (recur part (inc curr) (next s)))))
     (persistent! v)))
 
-(defn parallel-find-conflicts [the-chains simple-chains h]
+(defn parallel-find-conflicts-1 [the-chains simple-chains h]
   (let [num-proc (.availableProcessors (Runtime/getRuntime))
         schains (set-partition the-chains num-proc)
         agts    (doall (map #(agent %) schains))]
@@ -388,11 +390,14 @@
     (show-conflicts @a))))
 
 (defn parallel-find-conflicts-2 [the-chains simple-chains h]
-  (def pool (cp/threadpool 2))
   (let [num-proc (.availableProcessors (Runtime/getRuntime))
         schains (set-partition the-chains num-proc)
-        conf  (cp/upmap pool #(find-conflicts % simple-chains h) schains)]
+        conf  (doall (pmap #(find-conflicts % simple-chains h) schains))]
     (doseq [c conf]
       (show-conflicts c))))
 
+(defn parallel-find-conflicts-3 [the-chains simple-chains h]
+  (let [conf  (doall (pmap #(find-conflicts the-chains [%] h) simple-chains))]
+    (doseq [c conf]
+      (show-conflicts c))))
     
