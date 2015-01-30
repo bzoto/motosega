@@ -25,4 +25,4 @@
 ;; tests with 24/7
 ;; 85s sequential
 ;; 83s pmap (XXX-2)
-;; 38s threads (XXX-4)
+;; 35s threads (XXX-4)
