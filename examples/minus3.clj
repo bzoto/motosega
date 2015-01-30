@@ -9,15 +9,20 @@
 
 
 
-(def grammchains (grammatical-chains G1 'E 1 24 4))
+(def grammchains (grammatical-chains G1 'E 1 24 7))
 
 (show-chains grammchains)
 
 (time  
 
- ;;(show-conflicts (find-conflicts grammchains (chains-as-set (chains G1 'E 1 100)) 1))
+ ;(show-conflicts (find-conflicts grammchains (chains-as-set (chains G1 'E 1 100)) 1))
 
- (parallel-find-conflicts-2 grammchains (chains-as-set (chains G1 'E 1 100)) 1)
+ (parallel-find-conflicts-4 grammchains (chains-as-set (chains G1 'E 1 100)) 1)
 
 )
 
+
+;; tests with 24/7
+;; 85s sequential
+;; 83s pmap (XXX-2)
+;; 38s threads (XXX-4)

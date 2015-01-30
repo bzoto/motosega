@@ -401,3 +401,16 @@
     (doseq [c conf]
       (show-conflicts c))))
     
+(defn parallel-find-conflicts-4 [the-chains simple-chains h]
+  (let [num-proc (.availableProcessors (Runtime/getRuntime))
+        schains (set-partition the-chains num-proc)
+        thr (doall (map 
+                    (fn [s] (Thread. (fn []
+                                       (show-conflicts
+                                        (find-conflicts s simple-chains h)))))
+                    schains))]
+    (doseq [t thr]
+      (.start t))
+
+    (doseq [t thr]
+      (.join t))))
