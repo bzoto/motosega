@@ -15,4 +15,4 @@
 
 ;;(show-conflicts (find-conflicts grammchains (chains-as-set (chains G1 'E 2 100)) 2))
 
-(parallel-find-conflicts-1 grammchains (chains-as-set (chains G1 'E 2 100)) 2)
+(parallel-find-conflicts-4 grammchains (chains-as-set (chains G1 'E 2 100)) 2)

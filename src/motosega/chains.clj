@@ -7,6 +7,7 @@
 (ns motosega.chains)
 (require 'clojure.set)
 (require 'clojure.string)
+(use 'clojure.test)
 
 
 (defn Nonterm? [x] (and (vector? x)
@@ -156,7 +157,7 @@
         the-chains (atom {})
         ]
     (doseq [n nts]
-      (let [bd (filter #(not (empty? %))
+      (let [bd (filter #(seq %) ;; idiomatic for not empty
                        (map drop-nt (G n)))]
         (swap! bodys #(assoc % n (set bd)))))
 
@@ -253,6 +254,9 @@
 
 
 (defn three-factors [lst]
+  ;; {:pre  [(is (list? lst))]
+  ;;  :post [(is (and (list? %)
+  ;;                  (list (first %))))]}
   (let [out (atom '())
         n   (dec (count lst))]
     (loop [i 1]
@@ -305,7 +309,7 @@
 (defn conflictual 
   "c is a chain, x[y]z is a simple chain"
   [c x y z h]
-  (let [cc (three-factors c)]
+  (let [cc (three-factors (doall c))]
     (filter 
      (fn [fac]
        (let [[X Y Z] fac
@@ -357,7 +361,7 @@
         :when
         (let [[x y z] s
               confl (conflictual c x y z h)]
-          (not (empty? confl)))
+          (seq confl))
         ]
     (list s c)))
 
