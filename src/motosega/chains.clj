@@ -9,10 +9,15 @@
 (require 'clojure.string)
 (use 'clojure.test)
 
+(defmacro dbg[x] `(let [x# ~x] (println "dbg:" '~x "=" x#) x#))
 
-(defn Nonterm? [x] (and (vector? x)
-                        (= (first x) :nonterm)))
-(defn ->Nonterm [x] [:nonterm x])
+(defrecord Nonterm [nonterm])
+(defn Nonterm? [x] (instance? Nonterm x))
+
+
+;; (defn Nonterm? [x] (and (vector? x)
+;;                         (= (first x) :nonterm)))
+;; (defn ->Nonterm [x] [:nonterm x])
 
 (defn- drop-nt [lst]
   (filter #(not (Nonterm? %)) lst))
@@ -254,9 +259,6 @@
 
 
 (defn three-factors [lst]
-  ;; {:pre  [(is (list? lst))]
-  ;;  :post [(is (and (list? %)
-  ;;                  (list (first %))))]}
   (let [out (atom '())
         n   (dec (count lst))]
     (loop [i 1]
