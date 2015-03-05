@@ -14,6 +14,7 @@
 (defrecord Nonterm [nonterm])
 (defn Nonterm? [x] (instance? Nonterm x))
 
+(set! *warn-on-reflection* true)
 
 ;; (defn Nonterm? [x] (and (vector? x)
 ;;                         (= (first x) :nonterm)))
@@ -291,9 +292,12 @@
 (defn is-bracketed? [lst y]
   (loop [cur lst
          the-y y
-         state 0]
+         state -1]
     (cond
       (empty? cur)  (= state 2)
+      (and (= :< (first cur))
+           (== -1 state))
+      (recur (rest cur) the-y 0)
       (and (= :< (first cur))
            (== 0 state))
       (recur (rest cur) the-y 0)
